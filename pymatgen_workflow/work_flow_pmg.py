@@ -1,4 +1,4 @@
-from work_flow_ase import MyWorkFlow
+from .work_flow_ase import MyWorkFlow
 import os
 import sys
 import matplotlib.pyplot as plt

@@ -3,8 +3,9 @@ from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.core import Element
 from pymatgen.core import Structure
 import glob
+import os
 
-def build_models_list_and_folders_name(cls, *args):
+def build_models_list_and_folders_name(*args):
     """
 
     :param args: different structure format.for examples:'*.cif','*CONTCAR*','*.xyz','*POSCAR*'
