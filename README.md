@@ -31,8 +31,8 @@ pip install -e .
 
 使用示例
 以下是一个使用 MyWorkFlow_PMG 类进行 VASP 计算的示例:
-from pymatgen.core import Structure
 from pymatgen_workflow import MyWorkFlow_PMG
+from pymatgen_workflow.utils import build_models_list_and_folders_name
 
 # 设置INCAR参数
 low = {
@@ -50,7 +50,7 @@ low = {
 K_l = [2, 2, 2]
 
 # 从POSCAR文件构建结构对象和工作目录列表
-structure, folder = MyWorkFlow_PMG.build_models_list_and_folders_name('*POSCAR*')
+structure, folder = build_models_list_and_folders_name('*POSCAR*')
 
 # 遍历每个结构和工作目录
 for stru, workdir in zip(structure, folder):
