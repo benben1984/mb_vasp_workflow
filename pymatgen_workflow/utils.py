@@ -1,6 +1,27 @@
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.core import Element
+from pymatgen.core import Structure
+import glob
+
+def build_models_list_and_folders_name(cls, *args):
+    """
+
+    :param args: different structure format.for examples:'*.cif','*CONTCAR*','*.xyz','*POSCAR*'
+    :return: a tuple (models, folders_name) for calculation
+    note: need import os, glob
+    """
+    models_f = []
+    condition_list = args
+    for i in condition_list:
+        model = glob.iglob(i)
+        for f in model:
+            models_f.append(f)
+    models_folders = [i for i in models_f if os.path.isfile(i)]
+    models_folders_name = sorted(models_folders)
+    models = [Structure.from_file(m) for m in models_folders_name]
+
+    return models, models_folders_name
 
 def ase_pmg_object_convert(model, convert_mode=0):
     '''
