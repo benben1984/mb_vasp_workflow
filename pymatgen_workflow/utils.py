@@ -71,21 +71,27 @@ def input_convert(dict_info):
             new_dict[i] = j
     return new_dict
 
-def cal_oxygen_vacancy_formation_energy(bulk_dir=None, defect_dir=None, O2_E=-9.8543):
+def cal_oxygen_vacancy_formation_energy(bulk_dir=None, defect_dir=None, O2_E=-9.8543, bulk_coeff=1, defect_coeff=1):
     """
     计算氧空位形成能。
     
     Args:
-        bulk_dir (str, optional): 完整结构的计算目录。 Defaults to None.
-        defect_dir (str, optional): 缺陷结构的计算目录。 Defaults to None.
-        O2_E (float, optional): 氧气的能量。 Defaults to -9.8543.
+        bulk_dir (str, optional): 完整结构的计算目录。其默认值为 None。
+        defect_dir (str, optional): 缺陷结构的计算目录。其默认值为 None。
+        O2_E (float, optional): 氧气分子的能量。默认值为 -9.8543。
+        bulk_coeff (float, optional): 完整结构的能量系数。默认值为 1。
+        defect_coeff (float, optional): 缺陷结构的能量系数。默认值为 1。
     
     Returns:
-        float: 氧空位形成能。
+        float: 氧空位形成能，计算公式为 缺陷结构的最终能量 * 缺陷系数 + 氧气分子能量的一半 * 氧气系数 - 完整结构的最终能量 * 完整结构系数。
     """
+
+    # 从完整结构的计算目录中读取最终能量
     bulk_E = Vasprun(f'{bulk_dir}/vasprun.xml').final_energy
+    # 从缺陷结构的计算目录中读取最终能量
     defect_E = Vasprun(f'{defect_dir}/vasprun.xml').final_energy
-    return defect_E + 0.5 * O2_E - bulk_E
+    # 计算并返回氧空位形成能
+    return defect_E * defect_coeff + 0.5 * O2_E - bulk_E * bulk_coeff
     
 def get_p_band_center(vasp_directory='dos', orbital=1, element='O'):
     """
