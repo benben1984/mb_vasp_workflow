@@ -93,7 +93,7 @@ def cal_oxygen_vacancy_formation_energy(bulk_dir=None, defect_dir=None, O2_E=-9.
     # 计算并返回氧空位形成能
     return defect_E * defect_coeff + 0.5 * O2_E - bulk_E * bulk_coeff
     
-def get_p_band_center(vasp_directory='dos', orbital=1, element='O'):
+def get_p_band_center(vasp_directory='dos', orbital=1, element='O',erange= None):
     """
     获取p轨道能带中心。
     
@@ -101,6 +101,7 @@ def get_p_band_center(vasp_directory='dos', orbital=1, element='O'):
         vasp_directory (str, optional): DOS计算的目录。 Defaults to 'dos'.
         orbital (int, optional): 轨道类型,s=0, p=1, d=2, f=3。 Defaults to 1.
         element (str, optional): 元素。 Defaults to 'O'.
+        erange (tuple, optional): 能量范围 (-10, 0)。 Defaults to None .
     
     Returns:
         float: p轨道能带中心。
@@ -111,5 +112,5 @@ def get_p_band_center(vasp_directory='dos', orbital=1, element='O'):
     dos_data = vasprun.complete_dos
     orb = OrbitalType(orbital)
     element = Element(element)
-    p_band_center = dos_data.get_band_center(band=orb, elements=[element])
+    p_band_center = dos_data.get_band_center(band=orb, elements=[element],erange=erange)
     return p_band_center
