@@ -230,7 +230,7 @@ class MyWorkFlow_PMG(MyWorkFlow):
             os.chdir(os.path.dirname(os.getcwd()))
         else:
             pass
-            os.chdir(os.path.dirname(os.getcwd()))
+            # os.chdir(os.path.dirname(os.getcwd()))
 
     @__deco_func
     def relax(self,
