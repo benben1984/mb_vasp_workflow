@@ -4,7 +4,8 @@ from pymatgen.core import Element
 from pymatgen.core import Structure
 import glob
 import os
-
+import numpy as np
+from ase.io import read
 def build_models_list_and_folders_name(*args):
     """
 
@@ -114,3 +115,74 @@ def get_p_band_center(vasp_directory='dos', orbital=1, element='O',erange= None)
     element = Element(element)
     p_band_center = dos_data.get_band_center(band=orb, elements=[element],erange=erange)
     return p_band_center
+
+
+
+def get_average_metal_oxygen_bond_length(file_name='POSCAR', oxygen_symbol='O', metal_symbols=[], cutoff=2.5):
+    """Calculate the overall average bond length between all different metals and oxygen.
+
+    Args:
+        file_name (str, optional): Name of the file to read the structure from. Defaults to 'POSCAR'.
+        oxygen_symbol (str, optional): Symbol of the oxygen atom. Defaults to 'O'.
+        metal_symbols (list, optional): List of symbols for the metal atoms. Defaults to ['Mn', 'Cr', 'Mg'].
+        cutoff (float, optional): Maximum distance for considering a bond. Defaults to 2.5.
+
+    Returns:
+        float: The overall average bond length between all different metals and oxygen.
+    """
+    # Read the POSCAR file
+    structure = read(file_name, format='vasp')
+
+    # Extract coordinates of oxygen and metal atoms from the structure
+    oxygen_coords = []
+    metal_coords = []
+
+    for atom in structure:
+        symbol = atom.symbol
+        coords = atom.position
+        if symbol == oxygen_symbol:
+            oxygen_coords.append(coords)
+        elif symbol in metal_symbols:
+            metal_coords.append(coords)
+
+    # Calculate the bond lengths between each metal and oxygen
+    bond_lengths = []
+    for metal_coord in metal_coords:
+        for oxygen_coord in oxygen_coords:
+            if np.linalg.norm(metal_coord - oxygen_coord) < cutoff:
+                bond_lengths.append(np.linalg.norm(metal_coord - oxygen_coord))
+
+    # Calculate the overall average bond length
+    overall_average_bond_length = sum(bond_lengths) / len(bond_lengths)
+
+    return overall_average_bond_length
+
+def cal_surface_energies(slab_models, bulk_models, E_relax_slab, E_unrelax_slab, E_bulk):
+        """
+
+        :param slab_models: a list of slab models
+        :param bulk_models: a list of bulk models
+        :param E_relax_slab: a list of energies of relaxation slab
+        :param E_unrelax_slab: a list of energies of unrelaxation slab
+        :param E_bulk: a list of energies of bulks
+        :return: a list of surface energies
+        """
+        # surface areas
+        areas = []
+        for slab in slab_models:
+            cell = slab.get_cell()
+            area = np.linalg.norm(np.cross(cell[0], cell[1]))
+            areas.append(area)
+            # n*bulk_atomic_number=slab_number
+            # n = [slab.get_global_number_of_atoms() / bulk.get_global_number_of_atoms() for (slab,bulk) in zip(slab_models,bulk_models)]
+        s_n = [slab.get_global_number_of_atoms() for slab in slab_models]
+        b_n = [bulk.get_global_number_of_atoms() for bulk in bulk_models]
+        n = np.array(s_n) / np.array(b_n)
+        # calculation for surface energies
+        E_relax_slab = np.array(E_relax_slab)
+        E_unrelax_slab = np.array(E_unrelax_slab)
+        E_bulk = np.array(E_bulk)
+        # n = np.array(n)
+        areas = np.array(areas)
+        surf_E = (E_unrelax_slab - n * E_bulk) / (2 * areas) + (E_relax_slab - E_unrelax_slab) / areas
+        return surf_E
