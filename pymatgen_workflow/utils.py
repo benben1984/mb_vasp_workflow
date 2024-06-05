@@ -116,7 +116,38 @@ def get_p_band_center(vasp_directory='dos', orbital=1, element='O',erange= None)
     p_band_center = dos_data.get_band_center(band=orb, elements=[element],erange=erange)
     return p_band_center
 
+def get_d_band_center(vasp_directory='dos', orbital=2, element=None,site_start=None,site_end=None, erange=None):
+    """
+    获取d轨道能带中心。
+    
+    Args:
+        vasp_directory (str, optional): DOS计算的目录。 Defaults to 'dos'.
+        orbital (int, optional): 轨道类型,s=0, p=1, d=2, f=3。 Defaults to 1.
+        element (list, optional): 元素。 Defaults to 'None'.
+        sites (list, optional): 站点。 Defaults to None.(cannot be used in conjunction with element)
+        erange (tuple, optional): 能量范围 (-10, 0)。 Defaults to None .
+    
+    Returns:
+        float: d轨道能带中心。
+    """
+    from pymatgen.electronic_structure.core import OrbitalType
+    from pymatgen.core.sites import PeriodicSite
+    vasprun = Vasprun(f'./{vasp_directory}/vasprun.xml')
+    sites = vasprun.final_structure.sites
+    select_sites = []
+    for i in sites:
+        if i.species_string == element:
+            select_sites.append(i)
+    dos_data = vasprun.complete_dos
+    orb = OrbitalType(orbital)
+    element = Element(element)
+    sites = select_sites[site_start:site_end]
+    if element != None and site_start == None:
+        d_band_center = dos_data.get_band_center(band=orb, elements=[element],erange=erange)
+    elif element != None and site_start != None:
+        d_band_center = dos_data.get_band_center(band=orb ,sites=sites,erange=erange)
 
+    return d_band_center
 
 def get_average_metal_oxygen_bond_length(file_name='POSCAR', oxygen_symbol='O', metal_symbols=[], cutoff=2.5):
     """Calculate the overall average bond length between all different metals and oxygen.
