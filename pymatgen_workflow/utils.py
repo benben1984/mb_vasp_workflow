@@ -2,6 +2,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.core import Element
 from pymatgen.core import Structure
+from pymatgen.io.vasp.inputs import Incar
 import glob
 import os
 import numpy as np
@@ -71,6 +72,60 @@ def input_convert(dict_info):
         else:
             new_dict[i] = j
     return new_dict
+
+def parse_incar(input_data, from_file=True):
+    """
+    解析INCAR参数，可以从文件或字符串内容中读取
+    
+    Parameters:
+    -----------
+    input_data : str
+        如果from_file为True，则为INCAR文件的路径；
+        如果from_file为False，则为INCAR文件的字符串内容
+    from_file : bool, optional
+        指定是否从文件读取，默认为True
+    
+    Returns:
+    --------
+    dict
+        包含VASP计算参数的字典
+    
+    Example:
+    --------
+    >>> parameters = parse_incar('INCAR', from_file=True)
+    >>> print(parameters)
+    {'ALGO': 'Fast', 'ENCUT': 550, 'ISMEAR': 0, 'LORBIT': 11, 'ISPIN': 2, 'EDIFF': 1e-05, 'NPAR': 4, 'PREC': 'Normal'}
+    
+    >>> incar_content = "ALGO = Fast\nENCUT = 550\nISMEAR = 0"
+    >>> parameters = parse_incar(incar_content, from_file=False)
+    >>> print(parameters)
+    {'ALGO': 'Fast', 'ENCUT': 550, 'ISMEAR': 0}
+    """
+    try:
+        if from_file:
+            # 使用pymatgen的Incar类读取INCAR文件
+            incar = Incar.from_file(input_data)
+        else:
+            # 使用pymatgen的Incar类从字符串读取
+            incar_dict = {}
+            for line in input_data.strip().splitlines():
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    incar_dict[key.strip()] = value.strip()
+            incar = Incar.from_dict(incar_dict)
+        
+        # 将Incar对象转换为普通字典
+        parameters = dict(incar)
+        
+        return parameters
+        
+    except FileNotFoundError:
+        if from_file:
+            print(f"错误: 找不到文件 {input_data}")
+        return {}
+    except Exception as e:
+        print(f"解析INCAR时发生错误: {e}")
+        return {}
 
 def cal_oxygen_vacancy_formation_energy(bulk_dir=None, defect_dir=None, O2_E=-9.8543, bulk_coeff=1, defect_coeff=1):
     """

@@ -1,5 +1,7 @@
 import os
 import glob
+import itertools
+import numpy as np
 from ase.io import read
 from ase.constraints import FixAtoms
 from ase import Atom
@@ -163,3 +165,96 @@ class ModelSet:
             ran_replace_stru=deepcopy(ran_stru)
             ran_replace_stru.pop(eq_ids[i][0])
             ran_replace_stru.to(filename=f'POSCAR-{n}',fmt="poscar")
+            
+    @staticmethod
+    def rotate_coordinate(filename='POSCAR',oz_string=None, ox_string=None):
+        """
+        旋转坐标系函数，用于读取 VASP 的 POSCAR 文件，定义新的坐标系并输出旋转后的结构文件。
+
+        参数:
+            filename (str): 输入的 POSCAR 文件名，默认为 'POSCAR'。
+            oz_string (str): 定义新坐标系 z 轴方向的向量，支持输入一个向量（格式为 'x y z'）或两个点（格式为 'x1 y1 z1 x2 y2 z2'）。
+            ox_string (str): 定义新坐标系 x 轴方向的向量，支持输入一个向量（格式为 'x y z'）或两个点（格式为 'x1 y1 z1 x2 y2 z2'）。
+
+        功能:
+            1. 解析 POSCAR 文件，提取晶格参数和原子坐标。
+            2. 根据输入的 oz_string 和 ox_string 定义新的坐标系。
+            3. 计算旋转矩阵，将原始坐标系旋转到新的坐标系。
+            4. 输出旋转后的晶格和原子坐标到 'rotated.vasp' 文件。
+            5. 生成包含超胞结构的 'rotated.xyz' 文件。
+
+        输出:
+            - 'rotated.vasp': 旋转后的晶格和原子坐标文件。
+            - 'rotated.xyz': 包含超胞结构的 XYZ 文件。
+
+        注意:
+            - 输入的向量或点坐标应为分数坐标（fractional coordinates）。
+            - 函数依赖 numpy 和 itertools 模块。
+
+        示例:
+            rotate_coordinate(filename='POSCAR', oz_string='0 0 1', ox_string='1 0 0')
+        """
+        vasp = open(filename, 'r').readlines()
+        lattice = np.array([line.split() for line in vasp[2:5]], dtype='float')
+        atom_type, atom_num = vasp[5].split(), np.array(vasp[6].split(), dtype='int')
+        atoms = [t for t, n in zip(atom_type, atom_num) for _ in range(n)]
+        natom = atom_num.sum()
+        idx = 8 if vasp[7][0].lower() == 'd' else 9
+        position = np.array([i.split() for i in vasp[idx:idx + natom]], dtype='float')
+        position_xyz = np.dot(position, lattice)
+
+        # **********************
+        # * get final position *
+        # **********************
+        #
+        # Step 1. get Vec(oz) normalize vector
+        #
+        # oz_string = input('Please enter one or two vector [fractional coordinates]\n'
+        #                   '\tto define Vector of oz: \n')
+        oz_string = oz_string
+        temp = oz_string.split()
+        if len(temp) == 3:
+            oz = np.dot(np.array(temp, dtype='float'), lattice)
+        elif len(temp) == 6:
+            vec1 = np.array(temp[:3], dtype='float')
+            vec2 = np.array(temp[3:], dtype='float')
+            oz = np.dot(vec2 - vec1, lattice)
+        oz /= np.linalg.norm(oz)
+        #
+        # Step 2. project Vec(ox) to plane(oxy) and normlize
+        #         Vec_new(ox) = Vec(ox) - [Vec(ox) * Vec(oz)] * Vec[oz]
+        #
+        # ox_string = input('Please enter one or two vector [fractional coordinates]\n'
+        #                   '\tto define Vector of ox: \n')
+        ox_string=ox_string
+        temp = ox_string.split()
+        if len(temp) == 3:
+            ox = np.dot(np.array(temp, dtype='float'), lattice)
+        elif len(temp) == 6:
+            vec1 = np.array(temp[:3], dtype='float')
+            vec2 = np.array(temp[3:], dtype='float')
+            ox = np.dot(vec2 - vec1, lattice)
+        ox = ox - np.dot(ox, oz) * oz
+        ox /= np.linalg.norm(ox)
+        #
+        # Step 3. cross production of oz, ox ot get oy
+        #
+        oy = np.cross(oz, ox)
+        mat1 = np.concatenate((ox, oy, oz)).reshape((3, 3))
+        rot = np.linalg.solve(mat1, np.identity(3))
+        lattice_new = np.dot(lattice, rot)
+
+        # *********************************************
+        # * output to new position and check xyz file *
+        # *********************************************
+        # output to rotated.vasp
+        vasp[2:5] = ['%20.12F %20.12F %20.12F\n' % tuple(line) for line in lattice_new]
+        open('rotated.vasp', 'w').writelines(vasp)
+        # supercell and output to rotated.xyz
+        position_new = np.dot(position_xyz, rot)
+        with open('rotated.xyz', 'w') as fb:
+            fb.write(' %d\nmolecule\n' % (natom * 3**3))
+            for i, j, k in itertools.product(*map(range, [3, 3, 3])):
+                position_new2 = position_new + np.dot([i, j, k], lattice_new)
+                for _type, (x, y, z) in zip(atoms, position_new2):
+                    fb.write('%-2s %14.6F %14.6F %14.6F\n' % (_type, x, y, z))

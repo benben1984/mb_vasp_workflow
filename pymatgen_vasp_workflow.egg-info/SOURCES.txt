@@ -10,3 +10,4 @@ pymatgen_workflow/models_set.py
 pymatgen_workflow/utils.py
 pymatgen_workflow/work_flow_ase.py
 pymatgen_workflow/work_flow_pmg.py
+test/test.py
