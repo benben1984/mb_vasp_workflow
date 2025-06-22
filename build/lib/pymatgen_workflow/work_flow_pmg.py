@@ -6,8 +6,6 @@ from functools import wraps
 from pymatgen.io.vasp.inputs import Incar
 from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.io.vasp.inputs import Potcar
-from pymatgen.io.vasp.inputs import VaspInput
-from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.core import Structure
 from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet, MPNonSCFSet, MVLNPTMDSet, MPHSEBSSet, MVLElasticSet, MPMDSet
@@ -233,38 +231,6 @@ class MyWorkFlow_PMG(MyWorkFlow):
         else:
             pass
             # os.chdir(os.path.dirname(os.getcwd()))
-
-    @__deco_func
-    def general_calc(self,
-                    vasp_directory='calc',
-                    incar_set=None,
-                    k_set=None,
-                    potcar_set=None,
-                    functional="PBE"):
-        if incar_set != None:
-            incar_set.update(self.incar_setting)
-            incar = Incar(incar_set)    
-        else:
-            incar = Incar(self.incar_setting)
-        
-        if k_set != None:
-            k_set = self.__set_kpts(k_set)
-        else:
-            k_set = self.k_setting
-        if potcar_set != None:
-            potcar = Potcar()
-            potcar.set_symbols(potcar_set, functional=functional)
-
-        else:
-            potcar_symbols = [f"{s}" for s in self.structure.symbol_set]
-            potcar = Potcar()
-            potcar.set_symbols(potcar_symbols, functional=functional)
-        vasp_input = VaspInput(incar, k_set, Poscar(self.structure), potcar)
-        vasp_input.write_input(vasp_directory)
-        os.chdir(vasp_directory)
-        self.__run_vasp(vasp_directory)
-        os.chdir(os.path.dirname(os.getcwd()))
-        self.__is_continous(vasp_directory)
 
     @__deco_func
     def relax(self,

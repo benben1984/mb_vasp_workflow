@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: pymatgen_vasp_workflow
+Name: pymatgen_workflow
 Version: 0.0.0
 Requires-Dist: pymatgen
 Dynamic: requires-dist
