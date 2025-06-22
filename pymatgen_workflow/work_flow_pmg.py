@@ -242,7 +242,7 @@ class MyWorkFlow_PMG(MyWorkFlow):
                     potcar_set=None,
                     functional="PBE"):
         if incar_set != None:
-            incar_set.update(self.incar_setting)
+            self.incar_setting.update(incar_set)
             incar = Incar(incar_set)    
         else:
             incar = Incar(self.incar_setting)
